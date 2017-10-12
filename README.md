@@ -58,8 +58,8 @@ python 3.4
       比较log中的时间与当前时间是否是同一月, 如果是, 则返回false, 如果不是返回true, 另外如果Log不存在, 会抛出一个FileNotFoundError, 在本函数中捕, 并返回true
 
 #### Sender Class
-  Sender(smtp_server, smtp_port, from_addr, password, receive_list, email_object, log)
-  * property
+Sender(smtp_server, smtp_port, from_addr, password, receive_list, email_object, log)
+* property
    - smtp_server: 你所用到的smtp服务器, 例:如果你用QQ邮箱则使用smtp.qq.com
    - smtp_port: 连接smtp服务器的端口号
    - from_addr: 发件人邮箱地址
@@ -67,9 +67,9 @@ python 3.4
    - receive_list: 接收人列表, 为list&lt;string&gt; 其中的string为接收人的邮箱地址
    - email_object : 你定义好的Email对象
    - log : 你定义好的log对象
-   
-  * method
-   - loop_for_send(self)
+
+* method
+	- loop_for_send(self)
      循环查询该月是否已经发送过邮件, 如果发送了则不发送本月邮件.
 
 
