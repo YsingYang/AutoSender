@@ -67,6 +67,7 @@ python 3.4
    - receive_list: 接收人列表, 为list&lt;string&gt; 其中的string为接收人的邮箱地址
    - email_object : 你定义好的Email对象
    - log : 你定义好的log对象
+   
   * method
    - loop_for_send(self)
      循环查询该月是否已经发送过邮件, 如果发送了则不发送本月邮件.

@@ -16,12 +16,25 @@ class Person:
         self.name = name
         self.email = email
 
-    def set_name(self, name):
-        self.name = name
+    @property
+    def name(self):
+        return self._name
 
-    def set_email(self, email):
-        self.email = email
+    @name.setter
+    def name(self, name):
+        if not isinstance(name, str):
+            raise TypeError('Expected a string')
+        self._name = name
 
+    @property
+    def email(self):
+        return self._email
+
+    @email.setter
+    def email(self, email):
+        if not isinstance(email, str):
+            raise TypeError('Expected a string')
+        self._email = email
 
 class Email:
     def __init__(self, path):
