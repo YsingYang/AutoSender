@@ -64,8 +64,9 @@ class Email:
             encoders.encode_base64(mime)
             # 添加到MIMEMultipart:
             self.message.attach(mime)
-            self.message.attach(MIMEText('<html><body><h1>水费提醒</h1>' +
+            self.message.attach(MIMEText('<html><body><h1>这是一封正经的邮件</h1>' +
                                 '<p><img src="cid:0"></p>' +
+                                '大家记得交水费啊~'+
                                 '</body></html>', 'html', 'utf-8'))
 
     def get_content(self):
@@ -177,10 +178,10 @@ class Sender:
         message = self.email_object.get_content()
         while True:
             if(self.log.compare_time()):
-                smtp = smtplib.SMTP_SSL(self.smtp_server, self.smtp_port)
+                smtp = smtplib.SMTP(self.smtp_server, self.smtp_port)
                 smtp.login(self.from_addr, self.password)
                 #smtp.set_debuglevel(1)
-                #smtp.sendmail(self.from_addr, self.receive_list, message.as_string())
+                smtp.sendmail(self.from_addr, self.receive_list, message.as_string())
                 print('发送本月邮件')
                 smtp.quit()
 
@@ -188,12 +189,12 @@ class Sender:
 
 
 if __name__ == '__main__':
-    smtp_server = 'smtp.qq.com' # 设置smtp服务器
-    port = 465 #设置连接的smtp服务器端口
-    password = 'Your password' # 设置password
+    smtp_server = 'smtp.163.com' # 设置smtp服务器
+    port = 25 #设置连接的smtp服务器端口
+    password = 'password' # 设置password
     email_object = Email() #创建email对象, 并传入收钱码路径
-    email_object.set_content('/home/ysing/PycharmProjects/AutoSendingEmail/971059664.jpg') # 设置邮件内容
-    email_object.set_subject('交水费邮件') #设置邮件标题
+    email_object.set_content('./971059664.jpg') # 设置邮件内容
+    email_object.set_subject('这是一封很正经的邮件') #设置邮件标题
     email_object.add_person_by_json('./person_list.json') #读取json文件, 获取相应的receiver, 与sender
     recording_log = Log(os.path.join(os.getcwd(), 'sendingLog')) #创建log对象
     receive_list = email_object.get_receiver_list_email() #获取收件人列表的email地址
