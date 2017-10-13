@@ -37,18 +37,17 @@ class Person:
         self._email = email
 
 class Email:
-    def __init__(self, path):
+    def __init__(self):
         self.message = MIMEMultipart() # 初始化message
-        self.path = path
 
     def add_receiver(self, person):
         if not isinstance(person, Person): #如果person不是person类型, 则抛出异常
             raise Exception
         self.message['To'] = self._format_addr(person)
 
-    def set_content(self): #默认设置内容, 即支付宝图片
+    def set_content(self, path): #默认设置内容, 即支付宝图片
         # 添加附件就是加上一个MIMEBase，从本地读取一个图片:
-        with open(self.path, 'rb') as f:
+        with open(path, 'rb') as f:
             # 设置附件的MIME和文件名，这里是png类型:
             mime = MIMEBase('image', 'jpg', filename='test.png')
             # 加上必要的头信息:
@@ -84,9 +83,19 @@ class Email:
             raise Exception
         self.message['From'] = self._format_addr(person)
 
+    def add_person_by_json(self, path):
+        try:
+            with open(path, 'r'):
+                pass
+        except FileNotFoundError:
+            print('json file not found')
+            exit(0)
+        pass
+
     def _format_addr(self, person):
         name, addr = person.name, person.email
         return formataddr((Header(name, 'utf-8').encode(), addr))
+
 
 
 class Log:
@@ -145,8 +154,8 @@ if __name__ == '__main__':
     smtp_server = 'smtp.qq.com' # 设置smtp服务器
     port = 465 #设置连接的smtp服务器端口
     password = 'Your Password' # 设置password
-    email_object = Email('/home/ysing/PycharmProjects/AutoSendingEmail/971059664.jpg') #创建email对象, 并传入收钱码路径
-    email_object.set_content() # 设置邮件内容
+    email_object = Email() #创建email对象, 并传入收钱码路径
+    email_object.set_content('/home/ysing/PycharmProjects/AutoSendingEmail/971059664.jpg') # 设置邮件内容
     email_object.set_subject('交水费邮件') #设置邮件标题
     sd = Person('name', 'address') # 创建发件人对象
     rc_1 = Person('name', 'address') #创建收件人对象1
