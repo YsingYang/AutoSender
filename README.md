@@ -30,14 +30,15 @@ python 3.4
   Email(path)
   * property
     - message : MIMEMultipart对象
-    - path : 收钱码的地址
+    - receiver_list : 为存储Person的列表, 即收件人列表
+    - sender : 即发件人, Person类型
     
   * method
     - add_receiver(self, person)
       接受一个person对象, 并将该Person对象中的值添加到message['To']中, 即接收方
       
-    - set_content(self):
-      设置message中的content, 为默认设置(即添加良神的支付宝收款码)
+    - set_content(self, path):
+      设置message中的content, 带有一个path, 表示传入的收件码文件地址
       
     - get_content(self):
       返回message
@@ -47,6 +48,22 @@ python 3.4
     
     - add_sender(self, person)
       设置发送方, 接受一个Person对象, 并添加到message['From']中
+    - add_person_by_json(self, path)
+      设置发送方与接收方, 传入一个json文件的path路径即可, json文件的每一项要包括
+      1. `identity` : 表示身份, 是发送(sender)还是接受(receiver)
+      2. `name` : 表示Person name
+      3. `email` : 表示邮件地址
+    
+    - get_receiver_list(self):
+      返回接收者列表
+    - get_receiver_list_name(self):
+      返回接受者name的列表
+    - get_receiver_list_email(self):
+      返回接收者email的列表
+    - get_senderxxx
+      (不想再写了)
+     
+    
 
 #### Log Class
   Log(path)
@@ -74,6 +91,8 @@ Sender(smtp_server, smtp_port, from_addr, password, receive_list, email_object, 
 
 
 ### Example
+
+* Example_1
 ```
 if __name__ == '__main__':
     smtp_server = 'smtp.qq.com' # 设置smtp服务器
@@ -93,4 +112,29 @@ if __name__ == '__main__':
     from_addr = sd.email #设置发件人邮箱
     sender = Sender(smtp_server, port, from_addr, password, receive_list, email_object, recording_log) #创建sender对象
     sender.loop_for_send() #循环判断是否发送
+```
+
+* Example_2
+```
+if __name__ == '__main__':
+    smtp_server = 'smtp.qq.com' # 设置smtp服务器
+    port = 465 #设置连接的smtp服务器端口
+    password = 'Your password' # 设置password
+    email_object = Email() #创建email对象, 并传入收钱码路径
+    email_object.set_content('/home/ysing/PycharmProjects/AutoSendingEmail/971059664.jpg') # 设置邮件内容
+    email_object.set_subject('交水费邮件') #设置邮件标题
+    email_object.add_person_by_json('./person_list.json') #读取json文件, 获取相应的receiver, 与sender
+    recording_log = Log(os.path.join(os.getcwd(), 'sendingLog')) #创建log对象
+    receive_list = email_object.get_receiver_list_email() #获取收件人列表的email地址
+    from_addr = email_object.get_sender_email() #获取发件人email地址
+    sender = Sender(smtp_server, port, from_addr, password, receive_list, email_object, recording_log) #创建sender对象
+    sender.loop_for_send() #循环判断是否发送
+```
+相应的json文件
+```
+[
+	{"identity" : "sender", "name" : "ysing", "email" : "594171146@qq.com"},
+	{"identity" : "receiver", "name" : "ysing", "email" : "594171146@qq.com"},
+	{"identity" : "receiver", "name" : "ysing", "email" : "yangyxemail@163.com"}
+]
 ```

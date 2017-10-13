@@ -2,6 +2,7 @@ import time
 import os
 import smtplib
 import datetime
+import json
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -38,11 +39,14 @@ class Person:
 
 class Email:
     def __init__(self):
+        self.sender = None
+        self.receiver_list = []
         self.message = MIMEMultipart() # 初始化message
 
     def add_receiver(self, person):
         if not isinstance(person, Person): #如果person不是person类型, 则抛出异常
             raise Exception
+        self.receiver_list.append(person)
         self.message['To'] = self._format_addr(person)
 
     def set_content(self, path): #默认设置内容, 即支付宝图片
@@ -81,49 +85,80 @@ class Email:
     def add_sender(self, person):
         if not isinstance(person, Person): #如果person不是person类型, 则抛出异常
             raise Exception
+        self.sender = person
         self.message['From'] = self._format_addr(person)
 
     def add_person_by_json(self, path):
         try:
-            with open(path, 'r'):
-                pass
+            with open(path, 'r') as f:
+                person_content = json.load(f)
+                for person in person_content:
+                    if(not self._check_format(person)): #如果所需的3项属性不在, 则输出错误, 继续下一项
+                        print('json文件内容格式不正确')
+                        continue
+                    if(person['identity'] == 'sender'): #如果是发送者
+                        self.add_sender(Person(person['name'], person['email']))
+                    else:
+                        self.add_receiver(Person(person['name'], person['email']))
+
+
         except FileNotFoundError:
             print('json file not found')
             exit(0)
         pass
 
+    def get_sender(self):
+        return self.sender
+
+    def get_receiver_list(self):
+        return self.receiver_list
+
+    def get_reciver_list_name(self):
+        return [receiver.name for receiver in self.receiver_list]
+
+    def get_receiver_list_email(self):
+        return [receiver.email for receiver in self.receiver_list]
+
+    def get_sender_name(self):
+        return self.sender.name
+
+    def get_sender_email(self):
+        return self.sender.email
+
     def _format_addr(self, person):
         name, addr = person.name, person.email
         return formataddr((Header(name, 'utf-8').encode(), addr))
 
+    def _check_format(self, content):
+        if 'identity' not in content or 'name' not in content or 'email' not in content:
+            return False
+        return True
 
 
 class Log:
     def __init__(self, path):
         self.log_path = path
+        if(not os.path.exists(path)):
+            with open(self.log_path, 'w') as f:
+                pass
 
     def _read_time(self):
-        try:
-            with open(self.log_path, 'r+') as f: # 以w+方式打开会清空所有内容
-                return f.read() #读取log记录的时间
-        except FileNotFoundError: #捕获没有找到文件
-            return str() # 返回空字符串
+        with open(self.log_path, 'r+') as f: # 以w+方式打开会清空所有内容
+            return f.read() #读取log记录的时间
 
     def _write_time(self):
         with open(self.log_path, 'w+') as f:
             current_time = datetime.datetime.today()
             current_time_str = current_time.strftime('%Y-%m-%d %I:%M:%S')
             f.write(current_time_str)
-            return current_time
 
     def compare_time(self):
         last_time = self._read_time()
-        current_time = self._write_time()
-
-        if(len(last_time) == 0): #未记录过
-            return True
-        last_time_datetime = datetime.datetime.strptime(last_time, '%Y-%m-%d %I:%M:%S') # 将时间转换为datetime类型
+        current_time = datetime.datetime.today()
+        print(current_time.strftime('%Y-%m-%d %I:%M:%S') + '开始检测')
+        last_time_datetime = datetime.datetime.strptime(last_time, '%Y-%m-%d %I:%M:%S') if len(last_time) != 0 else datetime.datetime(1970, 1, 1, 0, 0, 0)# 将时间转换为datetime类型
         if(current_time.month != last_time_datetime.month):
+            self._write_time()
             return True #如果月份不一致, 返回True表示可以重新发送
         return False
 
@@ -144,28 +179,25 @@ class Sender:
             if(self.log.compare_time()):
                 smtp = smtplib.SMTP_SSL(self.smtp_server, self.smtp_port)
                 smtp.login(self.from_addr, self.password)
-                smtp.set_debuglevel(1)
-                smtp.sendmail(self.from_addr, self.receive_list, message.as_string())
+                #smtp.set_debuglevel(1)
+                #smtp.sendmail(self.from_addr, self.receive_list, message.as_string())
+                print('发送本月邮件')
                 smtp.quit()
+
             time.sleep(30)
 
 
 if __name__ == '__main__':
     smtp_server = 'smtp.qq.com' # 设置smtp服务器
     port = 465 #设置连接的smtp服务器端口
-    password = 'Your Password' # 设置password
+    password = 'Your password' # 设置password
     email_object = Email() #创建email对象, 并传入收钱码路径
     email_object.set_content('/home/ysing/PycharmProjects/AutoSendingEmail/971059664.jpg') # 设置邮件内容
     email_object.set_subject('交水费邮件') #设置邮件标题
-    sd = Person('name', 'address') # 创建发件人对象
-    rc_1 = Person('name', 'address') #创建收件人对象1
-    rc_2 = Person('name', 'address') # 创建收件人对象2
-    email_object.add_receiver(rc_1) #添加收件人对象1进邮件对象中
-    email_object.add_receiver(rc_2) # 添加收件人对象2进邮件对象中
-    email_object.add_sender(sd) #添加发件人对象仅邮件对象中
+    email_object.add_person_by_json('./person_list.json') #读取json文件, 获取相应的receiver, 与sender
     recording_log = Log(os.path.join(os.getcwd(), 'sendingLog')) #创建log对象
-    receive_list = [rc_1.email, rc_2.email] #设置收件人列表
-    from_addr = sd.email #设置发件人邮箱
+    receive_list = email_object.get_receiver_list_email() #获取收件人列表的email地址
+    from_addr = email_object.get_sender_email() #获取发件人email地址
     sender = Sender(smtp_server, port, from_addr, password, receive_list, email_object, recording_log) #创建sender对象
     sender.loop_for_send() #循环判断是否发送
 
