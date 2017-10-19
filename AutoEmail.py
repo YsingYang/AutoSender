@@ -147,7 +147,7 @@ class Log:
         with open(self.log_path, 'r+') as f: # 以w+方式打开会清空所有内容
             return f.read() #读取log记录的时间
 
-    def _write_time(self):
+    def write_time(self):
         with open(self.log_path, 'w+') as f:
             current_time = datetime.datetime.today()
             current_time_str = current_time.strftime('%Y-%m-%d %I:%M:%S')
@@ -159,7 +159,6 @@ class Log:
         print(current_time.strftime('%Y-%m-%d %I:%M:%S') + '开始检测')
         last_time_datetime = datetime.datetime.strptime(last_time, '%Y-%m-%d %I:%M:%S') if len(last_time) != 0 else datetime.datetime(1970, 1, 1, 0, 0, 0)# 将时间转换为datetime类型
         if(current_time.month != last_time_datetime.month):
-            self._write_time()
             return True #如果月份不一致, 返回True表示可以重新发送
         return False
 
@@ -183,6 +182,7 @@ class Sender:
                 #smtp.set_debuglevel(1)
                 smtp.sendmail(self.from_addr, self.receive_list, message.as_string())
                 print('发送本月邮件')
+                self.log.write_time()
                 smtp.quit()
 
             time.sleep(30)
