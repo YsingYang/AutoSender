@@ -42,6 +42,8 @@ class Email:
         self.sender = None
         self.receiver_list = []
         self.message = MIMEMultipart() # 初始化message
+        self.image_id = []
+        self.content = None
 
     def add_receiver(self, person):
         if not isinstance(person, Person): #如果person不是person类型, 则抛出异常
@@ -69,6 +71,33 @@ class Email:
                                 '大家记得交水费啊~'+
                                 '</body></html>', 'html', 'utf-8'))
 
+    def add_image_to_attach(self, path, postfix, name='test'):  # 添加附件
+        with open(path, 'rb') as f:
+            mime = MIMEBase('image', postfix, filename=name)
+            mime.add_header('Content-Disposition', 'attachment', filename=name)
+            mime.add_header('Content-ID', name)
+
+            # 读入附件内容
+            mime.set_payload(f.read())
+            encoders.encode_base64(mime)
+            self.message.attach(mime)
+
+            #记录图片id
+            self.image_id.append(name)
+
+    def add_content(self, content):
+        self.content = content
+
+    def create_email(self):
+        prefix = '<html><body><p>'
+        current_time = datetime.datetime.today()
+        current_time_str = current_time.strftime('%Y-%m-%d %I:%M:%S')
+        content = '<b>' + current_time_str + '</b><br>' + self.content
+        for image in self.image_id:
+            content += '<img src="cid:' + image + '">'
+        postfix = '</p></body></html>'
+        self.message.attach(MIMEText(prefix + content + postfix, 'html', 'utf-8'))
+
     def get_content(self):
         return self.message
 
@@ -78,9 +107,6 @@ class Email:
         self.message['Subject'] = Header(subject, 'utf-8').encode()
 
     def reset_content(self):
-        pass
-
-    def add_content(self):
         pass
 
     def add_sender(self, person):
@@ -158,7 +184,10 @@ class Log:
         current_time = datetime.datetime.today()
         print(current_time.strftime('%Y-%m-%d %I:%M:%S') + '开始检测')
         last_time_datetime = datetime.datetime.strptime(last_time, '%Y-%m-%d %I:%M:%S') if len(last_time) != 0 else datetime.datetime(1970, 1, 1, 0, 0, 0)# 将时间转换为datetime类型
-        if(current_time.month != last_time_datetime.month):
+        print(last_time_datetime, current_time)
+        print(last_time_datetime.day, current_time.day)
+        if(current_time.day != last_time_datetime.day):
+            print('返回True')
             return True #如果月份不一致, 返回True表示可以重新发送
         return False
 
@@ -177,30 +206,15 @@ class Sender:
         message = self.email_object.get_content()
         while True:
             if(self.log.compare_time()):
-                smtp = smtplib.SMTP(self.smtp_server, self.smtp_port)
+                smtp = smtplib.SMTP_SSL(self.smtp_server, self.smtp_port)
                 smtp.login(self.from_addr, self.password)
-                #smtp.set_debuglevel(1)
+                # smtp.set_debuglevel(1)
                 smtp.sendmail(self.from_addr, self.receive_list, message.as_string())
                 print('发送本月邮件')
-                self.log.write_time()
                 smtp.quit()
-
+            self.log.write_time()
             time.sleep(30)
 
-
-if __name__ == '__main__':
-    smtp_server = 'smtp.163.com' # 设置smtp服务器
-    port = 25 #设置连接的smtp服务器端口
-    password = 'password' # 设置password
-    email_object = Email() #创建email对象, 并传入收钱码路径
-    email_object.set_content('./971059664.jpg') # 设置邮件内容
-    email_object.set_subject('这是一封很正经的邮件') #设置邮件标题
-    email_object.add_person_by_json('./person_list.json') #读取json文件, 获取相应的receiver, 与sender
-    recording_log = Log(os.path.join(os.getcwd(), 'sendingLog')) #创建log对象
-    receive_list = email_object.get_receiver_list_email() #获取收件人列表的email地址
-    from_addr = email_object.get_sender_email() #获取发件人email地址
-    sender = Sender(smtp_server, port, from_addr, password, receive_list, email_object, recording_log) #创建sender对象
-    sender.loop_for_send() #循环判断是否发送
 
 
 

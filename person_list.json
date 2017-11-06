@@ -1,6 +1,5 @@
 [
 	{"identity" : "sender", "name" : "KenLee", "email" : "autosenderemail@qq.com"},
 	{"identity" : "receiver", "name" : "ysing", "email" : "594171146@qq.com"},
-	{"identity" : "receiver", "name" : "ysing", "email" : "yangyxemail@163.com"},
-	{"identity" : "receiver", "name" : "KenLee", "email" : "348004611@qq.com"}
+	{"identity" : "receiver", "name" : "ysing", "email" : "yangyxemail@163.com"}
 ]
